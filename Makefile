@@ -1,6 +1,6 @@
-EXE = rsaandroid
-SRC = rsaandroid.c
-OBJ = rsaandroid.o
+EXE = reduce
+SRC = reduce.cpp
+OBJ = reduce.o
 
 CLROOT= Dependencies/
 
@@ -14,16 +14,11 @@ LIB = -L$(CLROOT)lib/ -lOpenCL
 all: $(EXE)
 
 $(EXE): $(OBJ)
-	Toolchain/bin/arm-linux-androideabi-gcc -o $@ $(LDFLAG) $^ $(LIB) -fPIE -lm
+	Toolchain/bin/arm-linux-androideabi-g++ -o $@ $(LDFLAG) $^ $(LIB) -fPIE -lm
 
 $(OBJ): $(SRC)
-	Toolchain/bin/arm-linux-androideabi-gcc -o $@ $(CFLAG) $(INC) -c $<
+	Toolchain/bin/arm-linux-androideabi-g++ -o $@ $(CFLAG) $(INC) -c $<
 
 clean:
 	rm -fr $(EXE) $(OBJ)
-
-
-
-
-
 
