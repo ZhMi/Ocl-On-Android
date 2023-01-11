@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
 
 	cl_context context = clCreateContext(NULL, num_devices, devices, NULL, NULL, NULL);
 
-	cl_command_queue cmd_queue = clCreateCommandQueue(context, devices[0], 0, NULL);
+	cl_command_queue cmd_queue = clCreateCommandQueue(context, devices[0], CL_QUEUE_PROFILING_ENABLE, NULL);
 
 	fflush(stdout);
 	FILE *fil = fopen("/data/local/tmp/reduce.cl", "r");
@@ -165,11 +165,25 @@ int main(int argc, char *argv[])
 	cl_event enentPoint;
 	status = clEnqueueNDRangeKernel(cmd_queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, &enentPoint);
 	clWaitForEvents(1, &enentPoint); /// wait
-	clReleaseEvent(enentPoint);
+	// clReleaseEvent(enentPoint);
 	isStatusOK(status);
 
 	status = clEnqueueReadBuffer(cmd_queue, outputBuffer, CL_TRUE, 0, groupNUM * sizeof(int), output, 0, NULL, NULL);
 	isStatusOK(status);
+	clFinish(cmd_queue);
+	// cal kernel execution time
+	cl_ulong time_start;
+	cl_ulong time_end;
+
+	clGetEventProfilingInfo(enentPoint, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL);
+	clGetEventProfilingInfo(enentPoint, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL);
+	// clReleaseEvent(enentPoint);
+	double nanoSeconds = time_end - time_start;
+
+	cout << "OpenCl Exec end time is(nanoSeconds):" << time_end << endl;
+	cout << "OpenCl Exec start time is(nanoSeconds):" << time_start << endl;
+	cout << "OpenCl Exec time is(nanoSeconds):" << nanoSeconds << endl;
+	cout << "OpenCl Exec time is(millisecond):" << (nanoSeconds / 1e6) << endl;
 
 	for (size_t j = 0; j < groupNUM; j++)
 	{
