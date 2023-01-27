@@ -153,9 +153,11 @@ int main(int argc, char *argv[])
 
 	cl_mem inputBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, (NUM) * sizeof(int), (void *)input, NULL);
 	cl_mem outputBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, (groupNUM * sizeof(int)), NULL, NULL);
+	// navie version
+	// cl_kernel kernel = clCreateKernel(program, "reduce", NULL);
 
-	cl_kernel kernel = clCreateKernel(program, "reduce", NULL);
-
+    // solve warp divergence version
+	cl_kernel kernel = clCreateKernel(program, "reduce_v2", NULL);
 	status = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inputBuffer);
 	isStatusOK(status);
 
