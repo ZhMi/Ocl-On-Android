@@ -157,7 +157,10 @@ int main(int argc, char *argv[])
 	// cl_kernel kernel = clCreateKernel(program, "reduce", NULL);
 
     // solve warp divergence version
-	cl_kernel kernel = clCreateKernel(program, "reduce_v2", NULL);
+	// cl_kernel kernel = clCreateKernel(program, "reduce_v2", NULL);
+	
+	// solve bank conflict
+	cl_kernel kernel = clCreateKernel(program, "reduce_v3", NULL);
 	status = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inputBuffer);
 	isStatusOK(status);
 
