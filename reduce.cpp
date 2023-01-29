@@ -169,7 +169,10 @@ int main(int argc, char *argv[])
 	// cl_kernel kernel = clCreateKernel(program, "reduce_v3", NULL);
 
 	// idle thread version
-	cl_kernel kernel = clCreateKernel(program, "reduce_v4", NULL);
+	// cl_kernel kernel = clCreateKernel(program, "reduce_v4", NULL);
+	
+	// unroll last dim
+	cl_kernel kernel = clCreateKernel(program, "reduce_v5", NULL);
 	status = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inputBuffer);
 	isStatusOK(status);
 
