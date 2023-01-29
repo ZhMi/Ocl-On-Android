@@ -13,6 +13,8 @@ int isVerify(int NUM, int groupNUM, int *res)
 	int sum2 = 0;
 	for (int i = 0; i < groupNUM; i++)
 		sum2 += res[i];
+	cout << "sum1:" << sum1 << endl;
+	cout << "sum2:" << sum2 << endl;	
 	if (sum1 == sum2)
 		return 0;
 	return -1;
@@ -141,15 +143,19 @@ int main(int argc, char *argv[])
 		printf("%s\n", error_buffer);
 	}
 
-	int NUM = 640;												// 6400*4
-	size_t global_work_size[1] = {640};							/// x
-	size_t local_work_size[1] = {64};							/// 256 PE
-	size_t groupNUM = global_work_size[0] / local_work_size[0]; // 400 个工作组
+	int NUM = 640;												// 
+	// size_t global_work_size[1] = {640};	
+	
+	// idle thread version						
+	size_t global_work_size[1] = {320};
+	size_t local_work_size[1] = {64};					    //
+	// size_t local_work_size[1] = {128};
+	size_t groupNUM = global_work_size[0] / local_work_size[0]; //
 	cout << "groupNUM:" << groupNUM << endl;
 	int *input = new int[NUM];
 	for (int i = 0; i < NUM; i++)
 		input[i] = i + 1;
-	int *output = new int[groupNUM]; // 400
+	int *output = new int[groupNUM]; //
 
 	cl_mem inputBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, (NUM) * sizeof(int), (void *)input, NULL);
 	cl_mem outputBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, (groupNUM * sizeof(int)), NULL, NULL);
@@ -159,8 +165,11 @@ int main(int argc, char *argv[])
     // solve warp divergence version
 	// cl_kernel kernel = clCreateKernel(program, "reduce_v2", NULL);
 	
-	// solve bank conflict
-	cl_kernel kernel = clCreateKernel(program, "reduce_v3", NULL);
+	// solve bank conflict version
+	// cl_kernel kernel = clCreateKernel(program, "reduce_v3", NULL);
+
+	// idle thread version
+	cl_kernel kernel = clCreateKernel(program, "reduce_v4", NULL);
 	status = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inputBuffer);
 	isStatusOK(status);
 
@@ -169,6 +178,7 @@ int main(int argc, char *argv[])
 
 	cl_event enentPoint;
 	status = clEnqueueNDRangeKernel(cmd_queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, &enentPoint);
+
 	clWaitForEvents(1, &enentPoint); /// wait
 	// clReleaseEvent(enentPoint);
 	isStatusOK(status);
