@@ -172,7 +172,10 @@ int main(int argc, char *argv[])
 	// cl_kernel kernel = clCreateKernel(program, "reduce_v4", NULL);
 
 	// unroll last dim
-	cl_kernel kernel = clCreateKernel(program, "reduce_v5", NULL);
+	// cl_kernel kernel = clCreateKernel(program, "reduce_v5", NULL);
+	
+	// unroll for loop 
+	cl_kernel kernel = clCreateKernel(program, "reduce_v6", NULL);
 	status = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inputBuffer);
 	isStatusOK(status);
 

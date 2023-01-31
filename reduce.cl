@@ -136,3 +136,67 @@ __kernel void reduce_v5(__global const int *input, __global int *output)
 		output[bid] = sdata[0];
 	}
 }
+
+__kernel void reduce_v6(__global const int *input, __global int *output)
+{
+	unsigned int tid = get_local_id(0);
+	unsigned int bid = get_group_id(0);
+	unsigned int gid = get_global_id(0);
+	unsigned int block_size = get_local_size(0);
+	unsigned int group_num = get_num_groups(0);
+    __local volatile int sdata[64];   
+	sdata[tid] = input[gid] + input[gid + block_size * group_num];
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+	// do reduction in shared mem
+    if(block_size >= 512){
+        if(tid < 256){
+            sdata[tid] += sdata[tid + 256];
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+    if(block_size >= 256){
+        if(tid < 128){
+            sdata[tid] += sdata[tid + 128];
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+    if(block_size >= 128){
+        if(tid < 64){
+            sdata[tid] += sdata[tid + 64];
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+	if(block_size >= 64){
+        if(tid < 32){
+            sdata[tid] += sdata[tid + 32];
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+	if(block_size >= 32){
+        if(tid < 16){
+            sdata[tid] += sdata[tid + 16];
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+	if (tid < 8)
+	{
+		sdata[tid] += sdata[tid + 8];	
+	}
+	if (tid < 4)
+	{
+		sdata[tid] += sdata[tid + 4];
+	}
+	if (tid < 2)
+	{
+		sdata[tid] += sdata[tid + 2];
+	}
+	if (tid < 1)
+	{
+		sdata[tid] += sdata[tid + 1];
+	}
+	if (tid == 0)
+	{
+		output[bid] = sdata[0];
+	}
+}
