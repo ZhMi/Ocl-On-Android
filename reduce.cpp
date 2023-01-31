@@ -14,7 +14,7 @@ int isVerify(int NUM, int groupNUM, int *res)
 	for (int i = 0; i < groupNUM; i++)
 		sum2 += res[i];
 	cout << "sum1:" << sum1 << endl;
-	cout << "sum2:" << sum2 << endl;	
+	cout << "sum2:" << sum2 << endl;
 	if (sum1 == sum2)
 		return 0;
 	return -1;
@@ -143,12 +143,12 @@ int main(int argc, char *argv[])
 		printf("%s\n", error_buffer);
 	}
 
-	int NUM = 640;												// 
-	// size_t global_work_size[1] = {640};	
-	
-	// idle thread version						
+	int NUM = 640; //
+	// size_t global_work_size[1] = {640};
+
+	// idle thread version
 	size_t global_work_size[1] = {320};
-	size_t local_work_size[1] = {64};					    //
+	size_t local_work_size[1] = {64}; //
 	// size_t local_work_size[1] = {128};
 	size_t groupNUM = global_work_size[0] / local_work_size[0]; //
 	cout << "groupNUM:" << groupNUM << endl;
@@ -162,15 +162,15 @@ int main(int argc, char *argv[])
 	// navie version
 	// cl_kernel kernel = clCreateKernel(program, "reduce", NULL);
 
-    // solve warp divergence version
+	// solve warp divergence version
 	// cl_kernel kernel = clCreateKernel(program, "reduce_v2", NULL);
-	
+
 	// solve bank conflict version
 	// cl_kernel kernel = clCreateKernel(program, "reduce_v3", NULL);
 
 	// idle thread version
 	// cl_kernel kernel = clCreateKernel(program, "reduce_v4", NULL);
-	
+
 	// unroll last dim
 	cl_kernel kernel = clCreateKernel(program, "reduce_v5", NULL);
 	status = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inputBuffer);
@@ -196,6 +196,11 @@ int main(int argc, char *argv[])
 	clGetEventProfilingInfo(enentPoint, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL);
 	clGetEventProfilingInfo(enentPoint, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL);
 	// clReleaseEvent(enentPoint);
+
+	size_t warp_threads;
+	clGetKernelWorkGroupInfo(kernel, *devices, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(size_t), &warp_threads, NULL);
+	cout << "warp_threads:" << warp_threads << endl; 
+
 	double nanoSeconds = time_end - time_start;
 
 	cout << "OpenCl Exec end time is(nanoSeconds):" << time_end << endl;

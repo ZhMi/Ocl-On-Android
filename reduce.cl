@@ -103,11 +103,11 @@ __kernel void reduce_v5(__global const int *input, __global int *output)
 	unsigned int gid = get_global_id(0);
 	unsigned int blockSize = get_local_size(0);
 	unsigned int group_num = get_num_groups(0);
-    __local int sdata[64];   
+    __local volatile int sdata[64];   
 	sdata[tid] = input[gid] + input[gid + blockSize * group_num];
 	barrier(CLK_LOCAL_MEM_FENCE);
 
-	for (unsigned int s = blockSize / 2; s > 32; s /= 2)
+	for (unsigned int s = blockSize / 2; s > 8; s /= 2)
 	{
 		if (tid < s)
 		{
@@ -115,14 +115,21 @@ __kernel void reduce_v5(__global const int *input, __global int *output)
 		}
 		barrier(CLK_LOCAL_MEM_FENCE);
 	}
-	if (tid < 32)
+	if (tid < 8)
 	{
-		sdata[tid] += sdata[tid + 32];
-    	sdata[tid] += sdata[tid + 16];
-    	sdata[tid] += sdata[tid + 8];
-    	sdata[tid] += sdata[tid + 4];
-    	sdata[tid] += sdata[tid + 2];
-    	sdata[tid] += sdata[tid + 1];
+		sdata[tid] += sdata[tid + 8];	
+	}
+	if (tid < 4)
+	{
+		sdata[tid] += sdata[tid + 4];
+	}
+	if (tid < 2)
+	{
+		sdata[tid] += sdata[tid + 2];
+	}
+	if (tid < 1)
+	{
+		sdata[tid] += sdata[tid + 1];
 	}
 	if (tid == 0)
 	{
