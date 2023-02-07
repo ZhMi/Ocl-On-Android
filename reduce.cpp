@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <CL/cl.h>
 #include <iostream>
+#include<CL/cl_gl_ext.h>
 
 using namespace std;
 
@@ -102,6 +103,7 @@ int main(int argc, char *argv[])
 	printf("num_platforms: %d\n", (int)num_platforms);
 
 	cl_platform_id *platforms = (cl_platform_id *)malloc(num_platforms * sizeof(cl_platform_id));
+
 	clGetPlatformIDs(num_platforms, platforms, NULL);
 
 	cl_uint num_devices = 0;
@@ -111,6 +113,31 @@ int main(int argc, char *argv[])
 	devices = (cl_device_id *)malloc(num_devices * sizeof(cl_device_id));
 
 	clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_GPU, num_devices, devices, NULL);
+
+	/// get device info
+	char name_data[48];
+	char ext_data[4096];
+	char version_data[4096];
+
+	cl_int err;
+	for (int i = 0; i < 1; i++)
+	{
+		err = clGetDeviceInfo(devices[i], CL_DEVICE_NAME, sizeof(name_data), name_data, NULL);
+		if (err < 0)
+		{
+			cout << "clGetDeviceInfo err: err-code:" << err << endl
+				 << endl;
+			exit(1);
+		}
+		clGetDeviceInfo(devices[i], CL_DEVICE_VERSION, sizeof(version_data), version_data, NULL);
+		cout << "clGetDeviceInfo version data:" << version_data << endl
+			 << endl;
+
+		clGetDeviceInfo(devices[i], CL_DEVICE_EXTENSIONS, sizeof(ext_data), ext_data, NULL);
+		cout << "clGetDeviceInfo extension data:" << ext_data << endl
+			 << endl;
+	}
+	///
 
 	cl_context context = clCreateContext(NULL, num_devices, devices, NULL, NULL, NULL);
 
@@ -148,8 +175,7 @@ int main(int argc, char *argv[])
 
 	// idle thread version
 	size_t global_work_size[1] = {320};
-	size_t local_work_size[1] = {64}; //
-	// size_t local_work_size[1] = {128};
+	size_t local_work_size[1] = {64};							//
 	size_t groupNUM = global_work_size[0] / local_work_size[0]; //
 	cout << "groupNUM:" << groupNUM << endl;
 	int *input = new int[NUM];
@@ -173,9 +199,15 @@ int main(int argc, char *argv[])
 
 	// unroll last dim
 	// cl_kernel kernel = clCreateKernel(program, "reduce_v5", NULL);
-	
-	// unroll for loop 
-	cl_kernel kernel = clCreateKernel(program, "reduce_v6", NULL);
+
+	// unroll for loop
+	// cl_kernel kernel = clCreateKernel(program, "reduce_v6", NULL);
+
+	// __shfl_down_sync
+	// cl_khr_subgroups (supported on Bifrost GPUs from Mali™-G76, and all Valhall, and Avalon GPUs.)
+	// https://developer.arm.com/documentation/101574/0501/OpenCL-extensions?lang=en
+	// cur GPU version:   mali-g52 MP6
+	cl_kernel kernel = clCreateKernel(program, "reduce_v7", NULL);
 	status = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inputBuffer);
 	isStatusOK(status);
 
@@ -202,7 +234,7 @@ int main(int argc, char *argv[])
 
 	size_t warp_threads;
 	clGetKernelWorkGroupInfo(kernel, *devices, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(size_t), &warp_threads, NULL);
-	cout << "warp_threads:" << warp_threads << endl; 
+	cout << "warp_threads:" << warp_threads << endl;
 
 	double nanoSeconds = time_end - time_start;
 
