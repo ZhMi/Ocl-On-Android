@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <CL/cl.h>
 #include <iostream>
-#include<CL/cl_gl_ext.h>
+#include <CL/cl_gl_ext.h>
+#include <math.h>
+#include <iomanip>
 
 using namespace std;
 
@@ -114,8 +116,8 @@ int main(int argc, char *argv[])
 
 	clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_GPU, num_devices, devices, NULL);
 
-	/// get device info
-	char name_data[48];
+	////////////////////////////////////////// get device info ///////////////////////////////////////////
+	/*char name_data[48];
 	char ext_data[4096];
 	char version_data[4096];
 
@@ -136,8 +138,8 @@ int main(int argc, char *argv[])
 		clGetDeviceInfo(devices[i], CL_DEVICE_EXTENSIONS, sizeof(ext_data), ext_data, NULL);
 		cout << "clGetDeviceInfo extension data:" << ext_data << endl
 			 << endl;
-	}
-	///
+	}*/
+	////////////////////////////////////////// get device info ///////////////////////////////////////////
 
 	cl_context context = clCreateContext(NULL, num_devices, devices, NULL, NULL, NULL);
 
@@ -170,12 +172,11 @@ int main(int argc, char *argv[])
 		printf("%s\n", error_buffer);
 	}
 
-	int NUM = 640; //
-	// size_t global_work_size[1] = {640};
+	int NUM = 1024 * 256; //
 
 	// idle thread version
-	size_t global_work_size[1] = {320};
-	size_t local_work_size[1] = {64};							//
+	size_t global_work_size[1] = {1024 / 2 * 256};
+	size_t local_work_size[1] = {256};							//
 	size_t groupNUM = global_work_size[0] / local_work_size[0]; //
 	cout << "groupNUM:" << groupNUM << endl;
 	int *input = new int[NUM];
@@ -186,28 +187,34 @@ int main(int argc, char *argv[])
 	cl_mem inputBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, (NUM) * sizeof(int), (void *)input, NULL);
 	cl_mem outputBuffer = clCreateBuffer(context, CL_MEM_READ_WRITE, (groupNUM * sizeof(int)), NULL, NULL);
 	// navie version
+	// cout << "navie reduce:" << endl;
 	// cl_kernel kernel = clCreateKernel(program, "reduce", NULL);
 
 	// solve warp divergence version
+	// cout << "reduce_v2:" << endl; 
 	// cl_kernel kernel = clCreateKernel(program, "reduce_v2", NULL);
 
 	// solve bank conflict version
+	// cout << "reduce_v3:" << endl; 
 	// cl_kernel kernel = clCreateKernel(program, "reduce_v3", NULL);
 
 	// idle thread version
+	// cout << "reduce_v4:" << endl;
 	// cl_kernel kernel = clCreateKernel(program, "reduce_v4", NULL);
 
 	// unroll last dim
+	// cout << "reduce_v5:" << endl;
 	// cl_kernel kernel = clCreateKernel(program, "reduce_v5", NULL);
 
 	// unroll for loop
-	// cl_kernel kernel = clCreateKernel(program, "reduce_v6", NULL);
+	cout << "reduce_v6:" << endl;
+	cl_kernel kernel = clCreateKernel(program, "reduce_v6", NULL);
 
 	// __shfl_down_sync
 	// cl_khr_subgroups (supported on Bifrost GPUs from Mali™-G76, and all Valhall, and Avalon GPUs.)
 	// https://developer.arm.com/documentation/101574/0501/OpenCL-extensions?lang=en
 	// cur GPU version:   mali-g52 MP6
-	cl_kernel kernel = clCreateKernel(program, "reduce_v7", NULL);
+	// cl_kernel kernel = clCreateKernel(program, "reduce_v7", NULL);
 	status = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inputBuffer);
 	isStatusOK(status);
 
@@ -232,22 +239,32 @@ int main(int argc, char *argv[])
 	clGetEventProfilingInfo(enentPoint, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL);
 	// clReleaseEvent(enentPoint);
 
-	size_t warp_threads;
-	clGetKernelWorkGroupInfo(kernel, *devices, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(size_t), &warp_threads, NULL);
-	cout << "warp_threads:" << warp_threads << endl;
-
 	double nanoSeconds = time_end - time_start;
-
-	cout << "OpenCl Exec end time is(nanoSeconds):" << time_end << endl;
+	cout << "OpenCl Exec end time is(op):" << time_end << endl;
 	cout << "OpenCl Exec start time is(nanoSeconds):" << time_start << endl;
 	cout << "OpenCl Exec time is(nanoSeconds):" << nanoSeconds << endl;
 	cout << "OpenCl Exec time is(millisecond):" << (nanoSeconds / 1e6) << endl;
 
+	// bandwidth
+	double iter_nums = NUM;
+	cout << "iter_nums:" << iter_nums << endl;
+	double rw_bytes = iter_nums * sizeof(int) * 3 + sizeof(int) * NUM; // 2 read and 1 write
+	cout << "rw_bytes:" << rw_bytes << endl;
+	double band_wid = rw_bytes / (nanoSeconds * 1e-9) / 1024 / 1024 / 1024; // gB/s
+	cout << "band_wid:" << setprecision(5) <<  band_wid << "GB/s" << endl;
+
+	// gfloops
+	double gflops = iter_nums * 2 + iter_nums;
+	cout << "gflops:" << gflops << endl;
+	double gflops_per_sec = gflops / (nanoSeconds * 1e-9) * 1e-9; // g/s
+	cout << "gflops_per_sec:" << setprecision(5) << gflops_per_sec << " G/s"<< endl;
+
+	/*
 	for (size_t j = 0; j < groupNUM; j++)
 	{
 		cout << "output[" << j << "]:" << output[j] << endl;
 	}
-
+	*/
 	if (isVerify(NUM, groupNUM, output) == 0)
 		cout << "The result is right!!!" << endl;
 	else
