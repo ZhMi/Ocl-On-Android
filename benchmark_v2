@@ -1,0 +1,44 @@
+num： 512 * 256
+global_work_size：512 * 256
+local_work_size: 256
+work_group_num: 512
+
+iter_nums:32768
+rw_bytes:524288
+
+==============================================
+reduce navie
+
+band_wid:2.59826GB/s
+gflops_per_sec:0.5231 G/s
+
+==============================================
+reduce_v2
+
+band_wid:4.26406GB/s
+gflops_per_sec:0.858468 G/s
+
+==============================================
+reduce_v3
+
+band_wid:4.55GB/s
+gflops_per_sec:0.916 G/s
+
+==============================================
+reduce_v4
+
+band_wid:7.12GB/s
+gflops_per_sec:1.43 G/s
+
+==============================================
+reduce_v5
+
+band_wid:8.53GB/s
+gflops_per_sec:1.72 G/s
+
+==============================================
+reduce_v6
+
+band_wid:7.6GB/s
+gflops_per_sec:1.53 G/s
+==============================================
