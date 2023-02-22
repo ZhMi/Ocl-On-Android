@@ -217,11 +217,14 @@ __kernel void reduce_v7(__global const int *input, __global int *output)
 	barrier(CLK_LOCAL_MEM_FENCE);
 
 	int sum = 0;
+	sum = sdata[tid];
 	
+	// shared mem for partial sums(one per warp in the block)
 	__local int warpLevelSums[8];
     const int lane_id = tid % 8;
     const int warp_id = tid / 8;
 
+    // all values in a warp are reduced together 
 	sum = sub_group_reduce_add(sum);
 	if(lane_id == 0)
 	{
