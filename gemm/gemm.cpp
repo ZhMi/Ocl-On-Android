@@ -10,7 +10,7 @@ using namespace std;
 
 #define MAX_SOURCE_SIZE (0x100000)
 
-#define DEBUG_VERSION_V2
+#define DEBUG_VERSION_V0
 
 // inputA, inputB, outputC, heightA, widthA, widthB
 int isVerify(float *inputA, float *inputB, int heightA, int widthA, int widthB, float *actOutputC)
@@ -25,7 +25,6 @@ int isVerify(float *inputA, float *inputB, int heightA, int widthA, int widthB, 
 			{
 				tmp += inputA[i * widthA + k] * inputB[k * widthB + j];
 			}
-			cout << "expected: " << tmp << " --------- " <<  "actu: " <<  actOutputC[i * widthB + j] << endl; 
 			if (tmp != actOutputC[i * widthB + j])
 			{
 				res  = 0;
@@ -159,29 +158,49 @@ int main(int argc, char *argv[])
 		printf("%s\n", error_buffer);
 	}
 
-	int heightA = 4;
-	int widthA = 4;
-	int heightB = 4;
-	int widthB = 4;
-
 #ifdef DEBUG_VERSION_V0
-	size_t global_work_size[2] = {4, 4};
+	int heightA = 256;
+	int widthA = 256;
+	int heightB = 256;
+	int widthB = 256;
+	size_t global_work_size[2] = {256, 256};
 	size_t local_work_size[1] = {1}; //
 #endif
 
 #ifdef DEBUG_VERSION_V1
-	size_t global_work_size[1] = {4};
+	int heightA = 512;
+	int widthA = 512;
+	int heightB = 512;
+	int widthB = 512;
+	size_t global_work_size[1] = {512};
 	size_t local_work_size[1] = {1};
 #endif
 
 #ifdef DEBUG_VERSION_V2
-	size_t global_work_size[1] = {4};
+	int heightA = 512;
+	int widthA = 512;
+	int heightB = 512;
+	int widthB = 512;
+	size_t global_work_size[1] = {512};
 	size_t local_work_size[1] = {1};
 #endif
 
 #ifdef DEBUG_VERSION_V3
-	size_t global_work_size[1] = {4};
-	size_t local_work_size[1] = {1};
+    int heightA = 512;
+	int widthA = 512;
+	int heightB = 512;
+	int widthB = 512;
+	size_t global_work_size[1] = {512};
+	size_t local_work_size[1] = {size_t(32)};
+#endif
+
+#ifdef DEBUG_VERSION_V4
+	int heightA = 512;
+	int widthA = 512;
+	int heightB = 512;
+	int widthB = 512;
+	size_t global_work_size[1] = {512};
+	size_t local_work_size[1] = {size_t(32)};
 #endif
 
 	int numsA = heightA * widthA;
@@ -189,7 +208,6 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < numsA; i++)
 	{
 		inputA[i] = i + 1;
-		cout << "inputA[" << i << "]:" << inputA[i] << endl;
 	}
 
 	int numsB = heightB * widthB;
@@ -197,10 +215,7 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < numsB; i++)
 	{
 		inputB[i] = i + 1;
-		cout << "inputB[" << i << "]:" << inputB[i] << endl;
-
 	}
-
 	int numsC = heightA * widthB;
 	float *outputC = new float[numsC];
 	for (int i = 0; i < numsC; i++)
@@ -229,8 +244,13 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef DEBUG_VERSION_V3
-	cout << "v3 => store one column of B in local memory:" << endl;
+	cout << "v3 => store B in local memory:" << endl;
 	cl_kernel kernel = clCreateKernel(program, "gemm_v3", NULL);
+#endif
+
+#ifdef DEBUG_VERSION_V4
+	cout << "v4 => use vector 1*4:" << endl;
+	cl_kernel kernel = clCreateKernel(program, "gemm_v4", NULL);
 #endif
 	status = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inputABuf);
 	isStatusOK(status);
@@ -258,6 +278,9 @@ int main(int argc, char *argv[])
 #ifdef DEBUG_VERSION_V3
 	status = clEnqueueNDRangeKernel(cmd_queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, &enentPoint);
 #endif
+#ifdef DEBUG_VERSION_V4
+	status = clEnqueueNDRangeKernel(cmd_queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, &enentPoint);
+#endif
 
 	clWaitForEvents(1, &enentPoint); /// wait
 
@@ -283,6 +306,19 @@ int main(int argc, char *argv[])
 		cout << "The result is right!!!" << endl;
 	else
 		cout << "The result is wrong!!!" << endl;
+
+	// bandwidth
+	double rw_bytes = (heightA * widthA * widthB) * 2 * sizeof(float) + sizeof(float) * (heightA * widthB); // 2 read and 1 write
+	cout << "rw_bytes:" << rw_bytes << endl;
+	double band_wid = rw_bytes / (nanoSeconds * 1e-9) / 1024 / 1024 / 1024; // gB/s
+	cout << "band_wid:" << setprecision(5) <<  band_wid << "GB/s" << endl;
+
+	// gfloops
+	double gflops = (heightA * widthA * widthB) * 2 + (heightA * widthB);
+	cout << "gflops:" << gflops << endl;
+	double gflops_per_sec = gflops / (nanoSeconds * 1e-9) * 1e-9; // g/s
+	cout << "gflops_per_sec:" << setprecision(5) << gflops_per_sec << " G/s"<< endl;
+
 
 	status = clReleaseKernel(kernel);
 	status = clReleaseProgram(program);
