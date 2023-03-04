@@ -10,7 +10,7 @@ using namespace std;
 
 #define MAX_SOURCE_SIZE (0x100000)
 
-#define DEBUG_VERSION_V2
+#define DEBUG_VERSION_V1
 
 // inputA, inputB, outputC, heightA, widthA, widthB
 int isVerify(float *inputA, float *inputB, float *actOutputC, int N)
@@ -20,8 +20,9 @@ int isVerify(float *inputA, float *inputB, float *actOutputC, int N)
 	{
 		int expect = inputA[i] + inputB[i];
 		int act = actOutputC[i];
-		cout << "expect[" << i << "] = " <<  expect << "----- act[" << i << "] = " << act << endl; 
-		if (expect != act){
+		cout << "expect[" << i << "] = " << expect << "----- act[" << i << "] = " << act << endl;
+		if (expect != act)
+		{
 			res = 0;
 		}
 	}
@@ -151,7 +152,7 @@ int main(int argc, char *argv[])
 		printf("%s\n", error_buffer);
 	}
 
-	int NUM = 32 * 4;
+	int NUM = 256 * 256;
 
 #ifdef DEBUG_VERSION_V0
 	size_t global_work_size[1] = {NUM};
@@ -249,6 +250,18 @@ int main(int argc, char *argv[])
 		cout << "The result is right!!!" << endl;
 	else
 		cout << "The result is wrong!!!" << endl;
+
+	// bandwidth
+	double rw_bytes = (numsA + numsB + numsC) * sizeof(float); // 2 read and 1 write
+	cout << "rw_bytes:" << rw_bytes << endl;
+	double band_wid = rw_bytes / (nanoSeconds * 1e-9) / 1024 / 1024 / 1024; // gB/s
+	cout << "band_wid:" << setprecision(5) << band_wid << "GB/s" << endl;
+
+	// gfloops
+	double gflops = numsA * 2;
+	cout << "gflops:" << gflops << endl;
+	double gflops_per_sec = gflops / (nanoSeconds * 1e-9) * 1e-9; // g/s
+	cout << "gflops_per_sec:" << setprecision(5) << gflops_per_sec << " G/s" << endl;
 
 	status = clReleaseKernel(kernel);
 	status = clReleaseProgram(program);
