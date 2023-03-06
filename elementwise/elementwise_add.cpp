@@ -10,7 +10,7 @@ using namespace std;
 
 #define MAX_SOURCE_SIZE (0x100000)
 
-#define DEBUG_VERSION_V1
+#define DEBUG_VERSION_V2
 
 // inputA, inputB, outputC, heightA, widthA, widthB
 int isVerify(float *inputA, float *inputB, float *actOutputC, int N)
@@ -20,7 +20,7 @@ int isVerify(float *inputA, float *inputB, float *actOutputC, int N)
 	{
 		int expect = inputA[i] + inputB[i];
 		int act = actOutputC[i];
-		cout << "expect[" << i << "] = " << expect << "----- act[" << i << "] = " << act << endl;
+		// cout << "expect[" << i << "] = " << expect << "----- act[" << i << "] = " << act << endl;
 		if (expect != act)
 		{
 			res = 0;
@@ -152,10 +152,10 @@ int main(int argc, char *argv[])
 		printf("%s\n", error_buffer);
 	}
 
-	int NUM = 256 * 256;
+	int NUM = 512 * 64; // 32768 L2cache 131072 个float
 
 #ifdef DEBUG_VERSION_V0
-	size_t global_work_size[1] = {NUM};
+	size_t global_work_size[1] = {size_t(NUM)};
 	size_t local_work_size[1] = {1}; //
 #endif
 
@@ -168,10 +168,10 @@ int main(int argc, char *argv[])
 	size_t global_work_size[1] = {size_t(NUM / 8)};
 	size_t local_work_size[1] = {1};
 #endif
-	int numsA = NUM / 2;
-	int numsB = NUM / 2;
+	int numsA = NUM;
+	int numsB = NUM;
 	float *inputA = new float[numsA];
-	for (int i = 0; i < NUM / 2; i++)
+	for (int i = 0; i < numsA; i++)
 	{
 		inputA[i] = i + 1;
 	}
@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
 	cout << "band_wid:" << setprecision(5) << band_wid << "GB/s" << endl;
 
 	// gfloops
-	double gflops = numsA * 2;
+	double gflops = numsA;
 	cout << "gflops:" << gflops << endl;
 	double gflops_per_sec = gflops / (nanoSeconds * 1e-9) * 1e-9; // g/s
 	cout << "gflops_per_sec:" << setprecision(5) << gflops_per_sec << " G/s" << endl;

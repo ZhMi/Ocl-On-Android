@@ -1,0 +1,27 @@
+L2cache 131072 个float
+
+NUM = 512 * 64; // 32768 => C[i] = A[i] + B[i]
+================================================================
+【DEBUG_VERSION_V0】
+
+size_t global_work_size[1] = {size_t(NUM)};
+size_t local_work_size[1] = {1}; 
+band_wid:2.5213GB/s
+gflops_per_sec:0.2256 G/s
+
+================================================================
+【DEBUG_VERSION_V1】
+
+size_t global_work_size[1] = {size_t(NUM / 4)};
+size_t local_work_size[1] = {1};
+band_wid:3.2396GB/s
+gflops_per_sec:0.28987 G/s
+
+================================================================
+【DEBUG_VERSION_V2】
+
+size_t global_work_size[1] = {size_t(NUM / 8)};
+size_t local_work_size[1] = {1};
+band_wid:3.753GB/s
+gflops_per_sec:0.33582 G/s
+================================================================

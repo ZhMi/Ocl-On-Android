@@ -1,0 +1,27 @@
+calculate C 8X8 per block
+
+matrixA 256 * 256
+matrixB 256 * 256
+
+size_t global_work_size[2] = {256, 256};
+size_t local_work_size[2] = {8, 8};
+
+【v5-version】
+band_wid:5.9846GB/s
+gflops_per_sec:1.6034 G/s
+
+【v6-version】
+band_wid:14.68GB/s
+gflops_per_sec:3.9329 G/s
+
+=========================================================================
+calculate C 1X1 per block
+matrixA 256 * 256
+matrixB 256 * 256
+size_t global_work_size[2] = {256, 256};
+size_t local_work_size[1] = {1}; 
+
+【v0-version】
+band_wid:18.453GB/s
+gflops_per_sec:4.9438 G/s
+

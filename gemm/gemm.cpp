@@ -25,6 +25,7 @@ int isVerify(float *inputA, float *inputB, int heightA, int widthA, int widthB, 
 			{
 				tmp += inputA[i * widthA + k] * inputB[k * widthB + j];
 			}
+			// cout << "expect[" << i <<  "]" << "[" << j << "]" << ":" << tmp << "----" << "act:" <<   actOutputC[i * widthB + j] << "\n"; 
 			if (tmp != actOutputC[i * widthB + j])
 			{
 				res  = 0;
@@ -159,29 +160,29 @@ int main(int argc, char *argv[])
 	}
 
 #ifdef DEBUG_VERSION_V0
-	int heightA = 256;
-	int widthA = 256;
-	int heightB = 256;
-	int widthB = 256;
-	size_t global_work_size[2] = {256, 256};
+	int heightA = 368;
+	int widthA = 368;
+	int heightB = 368;
+	int widthB = 368;
+	size_t global_work_size[2] = {368, 368};
 	size_t local_work_size[1] = {1}; //
 #endif
 
 #ifdef DEBUG_VERSION_V1
-	int heightA = 512;
-	int widthA = 512;
-	int heightB = 512;
-	int widthB = 512;
-	size_t global_work_size[1] = {512};
+	int heightA = 256;
+	int widthA = 256;
+	int heightB = 256;
+	int widthB = 256;
+	size_t global_work_size[1] = {256};
 	size_t local_work_size[1] = {1};
 #endif
 
 #ifdef DEBUG_VERSION_V2
-	int heightA = 512;
-	int widthA = 512;
-	int heightB = 512;
-	int widthB = 512;
-	size_t global_work_size[1] = {512};
+	int heightA = 368;
+	int widthA = 368;
+	int heightB = 368;
+	int widthB = 368;
+	size_t global_work_size[1] = {368};
 	size_t local_work_size[1] = {1};
 #endif
 
@@ -201,6 +202,24 @@ int main(int argc, char *argv[])
 	int widthB = 512;
 	size_t global_work_size[1] = {512};
 	size_t local_work_size[1] = {size_t(32)};
+#endif
+
+#ifdef DEBUG_VERSION_V5
+	int heightA = 256;
+	int widthA = 256;
+	int heightB = 256;
+	int widthB = 256;
+	size_t global_work_size[2] = {256, 256};
+	size_t local_work_size[2] = {8, 8};
+#endif
+
+#ifdef DEBUG_VERSION_V6
+	int heightA = 256;
+	int widthA = 256;
+	int heightB = 256;
+	int widthB = 256;
+	size_t global_work_size[2] = {256, 256};
+	size_t local_work_size[2] = {8, 8};
 #endif
 
 	int numsA = heightA * widthA;
@@ -252,6 +271,16 @@ int main(int argc, char *argv[])
 	cout << "v4 => use vector 1*4:" << endl;
 	cl_kernel kernel = clCreateKernel(program, "gemm_v4", NULL);
 #endif
+
+#ifdef DEBUG_VERSION_V5
+	cout << "v5 => cal 4*4 of C per block " << endl;
+	cl_kernel kernel = clCreateKernel(program, "gemm_v5", NULL);
+#endif
+
+#ifdef DEBUG_VERSION_V6
+	cout << "v6 => pack A and B, cal 4*4 of C per block" << endl;
+	cl_kernel kernel = clCreateKernel(program, "gemm_v6", NULL);
+#endif
 	status = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inputABuf);
 	isStatusOK(status);
 	status = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&inputBBuf);
@@ -281,7 +310,12 @@ int main(int argc, char *argv[])
 #ifdef DEBUG_VERSION_V4
 	status = clEnqueueNDRangeKernel(cmd_queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, &enentPoint);
 #endif
-
+#ifdef DEBUG_VERSION_V5
+	status = clEnqueueNDRangeKernel(cmd_queue, kernel, 2, NULL, global_work_size, local_work_size, 0, NULL, &enentPoint);
+#endif
+#ifdef DEBUG_VERSION_V6
+	status = clEnqueueNDRangeKernel(cmd_queue, kernel, 2, NULL, global_work_size, local_work_size, 0, NULL, &enentPoint);
+#endif
 	clWaitForEvents(1, &enentPoint); /// wait
 
 	isStatusOK(status);
@@ -314,7 +348,7 @@ int main(int argc, char *argv[])
 	cout << "band_wid:" << setprecision(5) <<  band_wid << "GB/s" << endl;
 
 	// gfloops
-	double gflops = (heightA * widthA * widthB) * 2 + (heightA * widthB);
+	double gflops = (heightA * widthA * widthB) * 2;
 	cout << "gflops:" << gflops << endl;
 	double gflops_per_sec = gflops / (nanoSeconds * 1e-9) * 1e-9; // g/s
 	cout << "gflops_per_sec:" << setprecision(5) << gflops_per_sec << " G/s"<< endl;
