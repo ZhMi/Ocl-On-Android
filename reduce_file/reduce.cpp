@@ -248,13 +248,13 @@ int main(int argc, char *argv[])
 	// bandwidth
 	double iter_nums = NUM;
 	cout << "iter_nums:" << iter_nums << endl;
-	double rw_bytes = iter_nums * sizeof(int) * 3 + sizeof(int) * NUM; // 2 read and 1 write
+	double rw_bytes = iter_nums * sizeof(int) * 3; // 2 read and 1 write
 	cout << "rw_bytes:" << rw_bytes << endl;
 	double band_wid = rw_bytes / (nanoSeconds * 1e-9) / 1024 / 1024 / 1024; // gB/s
 	cout << "band_wid:" << setprecision(5) <<  band_wid << "GB/s" << endl;
 
 	// gfloops
-	double gflops = iter_nums * 2 + iter_nums;
+	double gflops = iter_nums;
 	cout << "gflops:" << gflops << endl;
 	double gflops_per_sec = gflops / (nanoSeconds * 1e-9) * 1e-9; // g/s
 	cout << "gflops_per_sec:" << setprecision(5) << gflops_per_sec << " G/s"<< endl;
