@@ -1,27 +1,53 @@
-calculate C 8X8 per block
-
 matrixA 256 * 256
 matrixB 256 * 256
+
+=========================================================================
+【v0-navie】
+calculate C 1X1 per block
+
+size_t global_work_size[2] = {256, 256};
+size_t local_work_size[1] = {1}; 
+
+band_wid:19.981GB/s
+gflops_per_sec:5.3563 G/s
+
+=========================================================================
+【v6-pack A and B】
+calculate C 1X1 per block
+packA[8][8]
+packB[8][8]
 
 size_t global_work_size[2] = {256, 256};
 size_t local_work_size[2] = {8, 8};
 
-【v5-version】
-band_wid:5.9846GB/s
-gflops_per_sec:1.6034 G/s
-
-【v6-version】
-band_wid:14.68GB/s
-gflops_per_sec:3.9329 G/s
+band_wid:15.84GB/s
+gflops_per_sec:4.2436 G/s
 
 =========================================================================
-calculate C 1X1 per block
+【v7-1X4】
+calculate C 1X4 per block
+
+size_t global_work_size[2] = {256, 256/4};
+size_t local_work_size[2] = {1, 1};
+
+band_wid:19.331GB/s
+gflops_per_sec:5.1789 G/s
+
+=========================================================================
+【v8-4X4】
+calculate C 4X4 per block
 matrixA 256 * 256
 matrixB 256 * 256
-size_t global_work_size[2] = {256, 256};
-size_t local_work_size[1] = {1}; 
+size_t global_work_size[2] = {256/4, 256/4};
+size_t local_work_size[2] = {1, 1};
 
-【v0-version】
-band_wid:18.453GB/s
-gflops_per_sec:4.9438 G/s
+band_wid:21.032GB/s
+gflops_per_sec:5.6347 G/s
+
+=========================================================================
+【v9-8X8】
+calculate C 8X8 per block
+
+gflops:3.3554e+07
+gflops_per_sec:0.26256 G/s
 

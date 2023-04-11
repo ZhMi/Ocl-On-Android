@@ -10,12 +10,11 @@ using namespace std;
 
 #define MAX_SOURCE_SIZE (0x100000)
 
-#define DEBUG_VERSION_V0
+#define DEBUG_VERSION_V10
 
 // inputA, inputB, outputC, heightA, widthA, widthB
 int isVerify(float *inputA, float *inputB, int heightA, int widthA, int widthB, float *actOutputC)
 {
-	int res = 1;
 	for (int i = 0; i < heightA; i++)
 	{
 		for (int j = 0; j < widthB; j++)
@@ -25,15 +24,14 @@ int isVerify(float *inputA, float *inputB, int heightA, int widthA, int widthB, 
 			{
 				tmp += inputA[i * widthA + k] * inputB[k * widthB + j];
 			}
-			// cout << "expect[" << i <<  "]" << "[" << j << "]" << ":" << tmp << "----" << "act:" <<   actOutputC[i * widthB + j] << "\n"; 
+		    cout << "expect[" << i <<  "]" << "[" << j << "]" << ":" << tmp << "----" << "act:" <<   actOutputC[i * widthB + j] << "\n"; 
 			if (tmp != actOutputC[i * widthB + j])
 			{
-				res  = 0;
-				//return 0;
+				return 0;
 			}
 		}
 	}
-	return res;
+	return 1;
 }
 
 const char *opencl_error_to_str(cl_int error)
@@ -222,6 +220,42 @@ int main(int argc, char *argv[])
 	size_t local_work_size[2] = {8, 8};
 #endif
 
+#ifdef DEBUG_VERSION_V7
+	int heightA = 256;
+	int widthA = 256;
+	int heightB = 256;
+	int widthB = 256;
+	size_t global_work_size[2] = {256, 256/4};
+	size_t local_work_size[2] = {1, 1};
+#endif
+
+#ifdef DEBUG_VERSION_V8
+	int heightA = 256;
+	int widthA = 256;
+	int heightB = 256;
+	int widthB = 256;
+	size_t global_work_size[2] = {256/4, 256/4};
+	size_t local_work_size[2] = {1, 1};
+#endif
+
+#ifdef DEBUG_VERSION_V9
+	int heightA = 256;
+	int widthA = 256;
+	int heightB = 256;
+	int widthB = 256;
+	size_t global_work_size[2] = {256/8, 256/8};
+	size_t local_work_size[2] = {1, 1};
+#endif
+
+#ifdef DEBUG_VERSION_V10
+	int heightA = 8;
+	int widthA = 8;
+	int heightB = 8;
+	int widthB = 8;
+	size_t global_work_size[2] = {8/4, 8/4};
+	size_t local_work_size[2] = {1, 1};
+#endif
+
 	int numsA = heightA * widthA;
 	float *inputA = new float[numsA];
 	for (int i = 0; i < numsA; i++)
@@ -278,8 +312,28 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef DEBUG_VERSION_V6
-	cout << "v6 => pack A and B, cal 4*4 of C per block" << endl;
+	cout << "v6 => pack A[8][8] and B[8][8], cal 1*1 of C per block" << endl;
 	cl_kernel kernel = clCreateKernel(program, "gemm_v6", NULL);
+#endif
+
+#ifdef DEBUG_VERSION_V7
+	cout << "v7 => cal 1X4 of C per block" << endl;
+	cl_kernel kernel = clCreateKernel(program, "gemm_v7", NULL);
+#endif
+
+#ifdef DEBUG_VERSION_V8
+	cout << "v8 => cal 4X4 of C per block" << endl;
+	cl_kernel kernel = clCreateKernel(program, "gemm_v8", NULL);
+#endif
+
+#ifdef DEBUG_VERSION_V9
+	cout << "v9 => cal 8X8 of C per block" << endl;
+	cl_kernel kernel = clCreateKernel(program, "gemm_v9", NULL);
+#endif
+
+#ifdef DEBUG_VERSION_V10
+	cout << "v9 => use half4 data type , cal 4X4 of C per block" << endl;
+	cl_kernel kernel = clCreateKernel(program, "gemm_v10", NULL);
 #endif
 	status = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inputABuf);
 	isStatusOK(status);
@@ -316,6 +370,22 @@ int main(int argc, char *argv[])
 #ifdef DEBUG_VERSION_V6
 	status = clEnqueueNDRangeKernel(cmd_queue, kernel, 2, NULL, global_work_size, local_work_size, 0, NULL, &enentPoint);
 #endif
+#ifdef DEBUG_VERSION_V7
+	status = clEnqueueNDRangeKernel(cmd_queue, kernel, 2, NULL, global_work_size, local_work_size, 0, NULL, &enentPoint);
+#endif
+#ifdef DEBUG_VERSION_V8
+	status = clEnqueueNDRangeKernel(cmd_queue, kernel, 2, NULL, global_work_size, local_work_size, 0, NULL, &enentPoint);
+#endif
+#ifdef DEBUG_VERSION_V9
+	status = clEnqueueNDRangeKernel(cmd_queue, kernel, 2, NULL, global_work_size, local_work_size, 0, NULL, &enentPoint);
+#endif
+#ifdef DEBUG_VERSION_V9
+	status = clEnqueueNDRangeKernel(cmd_queue, kernel, 2, NULL, global_work_size, local_work_size, 0, NULL, &enentPoint);
+#endif
+#ifdef DEBUG_VERSION_V10
+	status = clEnqueueNDRangeKernel(cmd_queue, kernel, 2, NULL, global_work_size, local_work_size, 0, NULL, &enentPoint);
+#endif
+
 	clWaitForEvents(1, &enentPoint); /// wait
 
 	isStatusOK(status);
