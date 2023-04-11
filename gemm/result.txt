@@ -51,3 +51,17 @@ calculate C 8X8 per block
 gflops:3.3554e+07
 gflops_per_sec:0.26256 G/s
 
+=========================================================================
+【v10-transposeB-1X4】
+
+transpose B and cal 1X4 of C per block
+k step : 8
+band_wid:20.913GB/s
+gflops_per_sec:5.6028 G/s
+
+=========================================================================
+【v11-transposeB-2X4】
+k step : 8
+transpose B and cal 2X4 of C per block
+band_wid:6.7612GB/s
+gflops_per_sec:1.8114 G/s

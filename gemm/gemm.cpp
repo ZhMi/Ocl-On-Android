@@ -10,11 +10,12 @@ using namespace std;
 
 #define MAX_SOURCE_SIZE (0x100000)
 
-#define DEBUG_VERSION_V10
+#define DEBUG_VERSION_V7
 
 // inputA, inputB, outputC, heightA, widthA, widthB
 int isVerify(float *inputA, float *inputB, int heightA, int widthA, int widthB, float *actOutputC)
 {
+	int res = 1;
 	for (int i = 0; i < heightA; i++)
 	{
 		for (int j = 0; j < widthB; j++)
@@ -24,14 +25,15 @@ int isVerify(float *inputA, float *inputB, int heightA, int widthA, int widthB, 
 			{
 				tmp += inputA[i * widthA + k] * inputB[k * widthB + j];
 			}
-		    cout << "expect[" << i <<  "]" << "[" << j << "]" << ":" << tmp << "----" << "act:" <<   actOutputC[i * widthB + j] << "\n"; 
+			// cout << "expect[" << i <<  "]" << "[" << j << "]" << ":" << tmp << "----" << "act:" <<   actOutputC[i * widthB + j] << "\n"; 
 			if (tmp != actOutputC[i * widthB + j])
 			{
-				return 0;
+				cout << "expect[" << i <<  "]" << "[" << j << "]" << ":" << tmp << "----" << "act:" <<   actOutputC[i * widthB + j] << "\n"; 
+				res = 0;
 			}
 		}
 	}
-	return 1;
+	return res;
 }
 
 const char *opencl_error_to_str(cl_int error)
@@ -248,11 +250,20 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef DEBUG_VERSION_V10
-	int heightA = 8;
-	int widthA = 8;
-	int heightB = 8;
-	int widthB = 8;
-	size_t global_work_size[2] = {8/4, 8/4};
+	int heightA = 256;
+	int widthA = 256;
+	int heightB = 256;
+	int widthB = 256;
+	size_t global_work_size[2] = {256, 256/4};
+	size_t local_work_size[2] = {1, 1};
+#endif
+
+#ifdef DEBUG_VERSION_V11
+	int heightA = 256;
+	int widthA = 256;
+	int heightB = 256;
+	int widthB = 256;
+	size_t global_work_size[2] = {256/2, 256/4};
 	size_t local_work_size[2] = {1, 1};
 #endif
 
@@ -275,6 +286,26 @@ int main(int argc, char *argv[])
 	{
 		outputC[i] = 0;
 	}
+
+// transposeB
+#if defined(DEBUG_VERSION_V10) or defined(DEBUG_VERSION_V11)
+	float *originB = new float[numsB];
+	for (int i = 0; i < numsA; i++)
+	{
+		inputA[i] = (i + 1) % 10 + 1;
+	}
+	for (int i = 0; i < numsB; i++)
+	{
+		originB[i] = (i + 1) % 10 + 1;
+	}
+	for (int i = 0; i < widthB; i++)
+	{
+		for (int j = 0; j < heightB; j++)
+		{
+			inputB[i * heightB + j] = originB[j * widthB + i];
+		}
+	}
+#endif
 
 	cl_mem inputABuf = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, (numsA * sizeof(float)), (void *)inputA, NULL);
 	cl_mem inputBBuf = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, (numsB * sizeof(float)), (void *)inputB, NULL);
@@ -332,8 +363,13 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef DEBUG_VERSION_V10
-	cout << "v9 => use half4 data type , cal 4X4 of C per block" << endl;
+	cout << "v10 => transposeB, cal 1X4 of C per block" << endl;
 	cl_kernel kernel = clCreateKernel(program, "gemm_v10", NULL);
+#endif
+
+#ifdef DEBUG_VERSION_V11
+	cout << "v10 => transposeB, cal 2X4 of C per block" << endl;
+	cl_kernel kernel = clCreateKernel(program, "gemm_v11", NULL);
 #endif
 	status = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inputABuf);
 	isStatusOK(status);
@@ -385,7 +421,9 @@ int main(int argc, char *argv[])
 #ifdef DEBUG_VERSION_V10
 	status = clEnqueueNDRangeKernel(cmd_queue, kernel, 2, NULL, global_work_size, local_work_size, 0, NULL, &enentPoint);
 #endif
-
+#ifdef DEBUG_VERSION_V11
+	status = clEnqueueNDRangeKernel(cmd_queue, kernel, 2, NULL, global_work_size, local_work_size, 0, NULL, &enentPoint);
+#endif
 	clWaitForEvents(1, &enentPoint); /// wait
 
 	isStatusOK(status);
@@ -406,10 +444,18 @@ int main(int argc, char *argv[])
 	cout << "OpenCl Exec time is(nanoSeconds):" << nanoSeconds << endl;
 	cout << "OpenCl Exec time is(millisecond):" << (nanoSeconds / 1e6) << endl;
 
+#if defined(DEBUG_VERSION_V10) or defined(DEBUG_VERSION_V11)
+	if (isVerify(inputA, originB, heightA, widthA, widthB, outputC) == 1)
+		cout << "The result is right!!!" << endl;
+	else
+		cout << "The result is wrong!!!" << endl;
+#else
 	if (isVerify(inputA, inputB, heightA, widthA, widthB, outputC) == 1)
 		cout << "The result is right!!!" << endl;
 	else
 		cout << "The result is wrong!!!" << endl;
+#endif	
+	
 
 	// bandwidth
 	double rw_bytes = (heightA * widthA * widthB) * 2 * sizeof(float) + sizeof(float) * (heightA * widthB); // 2 read and 1 write

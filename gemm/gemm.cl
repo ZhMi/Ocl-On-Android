@@ -407,3 +407,144 @@ __kernel void gemm_v9(__global const float *A, __global float *B, __global float
 	vstore8(c6, 0, C + (i + 6) * widthB + j);
 	vstore8(c7, 0, C + (i + 7) * widthB + j);
 }
+
+// loop k, step = 4, cal 1X4 of c
+// __kernel void gemm_v10(__global const float *A, __global float *tB, __global float *C, int heightA, int widthA, int widthB) 
+// {
+//   	int i = get_global_id(0); // max:M
+// 	int j = get_global_id(1) * 4; // max:N/4
+
+// 	float4 c0 = 0;
+// 	float4 c1 = 0;
+// 	float4 c2 = 0;
+// 	float4 c3 = 0;
+	
+//     float4 c_vec4;
+//     for (int k = 0; k < widthA; k+=4) 
+// 	{
+// 		float4 a0 = vload4(0, A +  i * widthA + k);
+// 		float4 b0 = vload4(0, tB + j * widthA + k);
+// 		float4 b1 = vload4(0, tB + (j + 1) * widthA + k);
+// 		float4 b2 = vload4(0, tB + (j + 2) * widthA + k);
+// 		float4 b3 = vload4(0, tB + (j + 3) * widthA + k);
+
+// 		c0 += a0 * b0;
+// 		c1 += a0 * b1;
+// 		c2 += a0 * b2;
+// 		c3 += a0 * b3;
+//     }
+// 	c_vec4.x = c0.x + c0.y + c0.z + c0.w;
+// 	c_vec4.y = c1.x + c1.y + c1.z + c1.w;
+// 	c_vec4.z = c2.x + c2.y + c2.z + c2.w;
+// 	c_vec4.w = c3.x + c3.y + c3.z + c3.w;
+
+// 	/*C[i*widthB + j] = c00;
+// 	C[i*widthB + j + 1] = c01;
+// 	C[i*widthB + j + 2] = c02;
+// 	C[i*widthB + j + 3] = c03;*/
+// 	vstore4(c_vec4, 0, C + i * widthB + j);
+// }
+
+// loop k, step = 8, cal 1X4 of c
+__kernel void gemm_v10(__global const float *A, __global float *tB, __global float *C, int heightA, int widthA, int widthB) 
+{
+  	int i = get_global_id(0); // max:M
+	int j = get_global_id(1) * 4; // max:N/4
+
+	float8 c0 = 0;
+	float8 c1 = 0;
+	float8 c2 = 0;
+	float8 c3 = 0;
+
+	// float4 c2 = 0;
+	// float4 c3 = 0;
+    float4 c_vec4;
+    for (int k = 0; k < widthA; k+=8) 
+	{
+		float8 a0 = vload8(0, A +  i * widthA + k);
+		float8 b0 = vload8(0, tB + j * widthA + k);
+		float8 b1 = vload8(0, tB + (j + 1) * widthA + k);
+		float8 b2 = vload8(0, tB + (j + 2) * widthA + k);
+		float8 b3 = vload8(0, tB + (j + 3) * widthA + k);
+
+		c0 += a0 * b0;
+		c1 += a0 * b1;
+		c2 += a0 * b2;
+		c3 += a0 * b3;
+    }
+	c_vec4.s0 = c0.s0 + c0.s1 + c0.s2 + c0.s3 + c0.s4 + c0.s5 + c0.s6 + c0.s7;
+	c_vec4.s1 = c1.s0 + c1.s1 + c1.s2 + c1.s3 + c1.s4 + c1.s5 + c1.s6 + c1.s7;
+	c_vec4.s2 = c2.s0 + c2.s1 + c2.s2 + c2.s3 + c2.s4 + c2.s5 + c2.s6 + c2.s7;
+	c_vec4.s3 = c3.s0 + c3.s1 + c3.s2 + c3.s3 + c3.s4 + c3.s5 + c3.s6 + c3.s7;
+
+	// float c02 = c2.x + c2.y + c2.z + c2.w;
+	// float c03 = c3.x + c3.y + c3.z + c3.w;
+
+	// C[i*widthB + j] = c00;
+	// C[i*widthB + j + 1] = c01;
+	// C[i*widthB + j + 2] = c02;
+	// C[i*widthB + j + 3] = c03;
+	vstore4(c_vec4, 0, C + i * widthB + j);
+}
+
+// loop k, step = 8, cal 2X4 of c
+__kernel void gemm_v11(__global const float *A, __global float *tB, __global float *C, int heightA, int widthA, int widthB) 
+{
+  	int i = get_global_id(0) * 2; // max:M
+	int j = get_global_id(1) * 4; // max:N/4
+
+	float8 c0 = 0;
+	float8 c1 = 0;
+	float8 c2 = 0;
+	float8 c3 = 0;
+	
+	float8 c4 = 0;
+	float8 c5 = 0;
+	float8 c6 = 0;
+	float8 c7 = 0;
+
+	// float4 c2 = 0;
+	// float4 c3 = 0;
+    float4 c_vec4_0;
+	float4 c_vec4_1;
+
+    for (int k = 0; k < widthA; k+=8) 
+	{
+		float8 a0 = vload8(0, A +  i * widthA + k);
+		float8 a1 = vload8(0, A +  (i + 1) * widthA + k);
+
+		float8 b0 = vload8(0, tB + j * widthA + k);
+		float8 b1 = vload8(0, tB + (j + 1) * widthA + k);
+		float8 b2 = vload8(0, tB + (j + 2) * widthA + k);
+		float8 b3 = vload8(0, tB + (j + 3) * widthA + k);
+
+		c0 += a0 * b0;
+		c1 += a0 * b1;
+		c2 += a0 * b2;
+		c3 += a0 * b3;
+
+		c4 += a1 * b0;
+		c5 += a1 * b1;
+		c6 += a1 * b2;
+		c7 += a1 * b3;
+    }
+	c_vec4_0.s0 = c0.s0 + c0.s1 + c0.s2 + c0.s3 + c0.s4 + c0.s5 + c0.s6 + c0.s7;
+	c_vec4_0.s1 = c1.s0 + c1.s1 + c1.s2 + c1.s3 + c1.s4 + c1.s5 + c1.s6 + c1.s7;
+	c_vec4_0.s2 = c2.s0 + c2.s1 + c2.s2 + c2.s3 + c2.s4 + c2.s5 + c2.s6 + c2.s7;
+	c_vec4_0.s3 = c3.s0 + c3.s1 + c3.s2 + c3.s3 + c3.s4 + c3.s5 + c3.s6 + c3.s7;
+
+	c_vec4_1.s0 = c4.s0 + c4.s1 + c4.s2 + c4.s3 + c4.s4 + c4.s5 + c4.s6 + c4.s7;
+	c_vec4_1.s1 = c5.s0 + c5.s1 + c5.s2 + c5.s3 + c5.s4 + c5.s5 + c5.s6 + c5.s7;
+	c_vec4_1.s2 = c6.s0 + c6.s1 + c6.s2 + c6.s3 + c6.s4 + c6.s5 + c6.s6 + c6.s7;
+	c_vec4_1.s3 = c7.s0 + c7.s1 + c7.s2 + c7.s3 + c7.s4 + c7.s5 + c7.s6 + c7.s7;
+
+	// float c02 = c2.x + c2.y + c2.z + c2.w;
+	// float c03 = c3.x + c3.y + c3.z + c3.w;
+
+	// C[i*widthB + j] = c00;
+	// C[i*widthB + j + 1] = c01;
+	// C[i*widthB + j + 2] = c02;
+	// C[i*widthB + j + 3] = c03;
+	vstore4(c_vec4_0, 0, C + i * widthB + j);
+	vstore4(c_vec4_1, 0, C + (i + 1) * widthB + j);
+}
